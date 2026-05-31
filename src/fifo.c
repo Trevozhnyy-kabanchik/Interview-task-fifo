@@ -1,44 +1,56 @@
 #include "fifo.h"
+#include "crit_sec.h"
 
+/**
+ * @file fifo.c
+ * @brief Реализация кольцевого FIFO
+ */
+
+/**
+ * @brief Размер кольцевого буфера в байтах
+ *
+ * Хранится не более (BUF_SIZE - 1) байт, при head == tail
+ * буфер считается пустым
+ */
 #define BUF_SIZE 32
 
-// буфер для кольцевого fifo
-static volatile uint8_t buf[BUF_SIZE];
-// указатель на ячейку, куда запишем следующий байт
-static volatile uint32_t head = (uint32_t) 0;
-// указатель, откуда мы прочитаем самый старый непрочитанный байт
-static volatile uint32_t tail = (uint32_t) 0;
+static volatile uint8_t buf[BUF_SIZE]; /**< кольцевой буфер данных */
+static volatile uint32_t head = (uint32_t)0; /**< следующая позиция записи */
+static volatile uint32_t tail = (uint32_t)0; /**< следующая позиция чтения */
 
-void fifo_init(){
-    head = (uint32_t) 0;
-    tail = (uint32_t) 0;
+void fifo_init() {
+  head = (uint32_t)0;
+  tail = (uint32_t)0;
 }
 
-bool fifo_is_empty(){
-    return head == tail;
+bool fifo_is_empty() { return head == tail; }
+
+bool read_fifo(uint8_t *data) {
+  if (fifo_is_empty()) {
+    return false;
+  }
+
+  *data = buf[tail];
+  tail = (tail + (uint32_t)1) % BUF_SIZE;
+
+  return true;
 }
 
-bool read_fifo(uint8_t *data){
-    if (fifo_is_empty()) {
-        return false;
-    }
+bool write_fifo(uint8_t data) {
+  uint32_t saved_state = 0;
+  crit_sec_enter(&saved_state);
 
-    *data = buf[tail];
-    tail = (tail + (uint32_t) 1) % BUF_SIZE;
+  uint32_t next_head = (head + (uint32_t)1) % BUF_SIZE;
 
-    return true;
-}
+  // Буфер полон => запись отклоняется
+  if (next_head == tail) {
+    crit_sec_exit(saved_state);
+    return false;
+  }
 
-bool write_fifo(uint8_t data){
-    uint32_t next_head = (head + (uint32_t) 1) % BUF_SIZE;
+  buf[head] = data;
+  head = next_head;
 
-    // Это проверка на косяк, если кольцо заполнилось, мы не можем перезаписать следующий байт, т.к. он ещё нужен, ведь он не прочитан
-    if (next_head == tail){
-        return false;
-    }
-
-    buf[head] = data;
-    head = next_head;
-
-    return true;
+  crit_sec_exit(saved_state);
+  return true;
 }

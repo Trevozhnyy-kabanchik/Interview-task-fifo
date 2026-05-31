@@ -1,8 +1,10 @@
 cmake_minimum_required(VERSION 3.14)
 project(fifo LANGUAGES C CXX)
 
-add_library(fifo src/fifo.c)
+add_library(fifo src/fifo.c src/crit_sec.c)
 target_include_directories(fifo PUBLIC include)
+find_package(Threads REQUIRED)
+target_link_libraries(fifo PUBLIC Threads::Threads)
 
 enable_testing()
 include(FetchContent)

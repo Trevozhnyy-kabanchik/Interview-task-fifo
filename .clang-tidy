@@ -1,0 +1,30 @@
+Checks: >
+  -*,
+  clang-analyzer-*,
+  bugprone-*,
+  -bugprone-easily-swappable-parameters,
+  -bugprone-reserved-identifier,
+  readability-*,
+  -readability-function-cognitive-complexity,
+  -readability-else-after-return,
+  performance-*,
+  -performance-no-int-to-ptr,
+  misc-*,
+  -misc-include-cleaner,
+  -misc-non-private-member-variables-in-classes,
+  modernize-*,
+  -modernize-use-trailing-return-type,
+  -modernize-avoid-c-arrays,
+  -modernize-macro-to-enum,
+  -cert-*
+HeaderFilterRegex: '(include|src|tests)/.*'
+WarningsAsErrors: false
+ExtraArgs:
+  - -Wstrict-prototypes
+  - -Wmissing-prototypes
+  - -Wunreachable-code
+  - -Wold-style-definition
+CheckOptions:
+  readability-magic-numbers.IgnoredIntegerValues: '0;1;32'
+  readability-identifier-length.MinimumVariableNameLength: 2
+  readability-identifier-length.MinimumParameterNameLength: 1
